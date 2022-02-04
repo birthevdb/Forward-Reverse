@@ -1,0 +1,193 @@
+-- {-# LANGUAGE MultiParamTypeClasses #-}
+-- {-# LANGUAGE FunctionalDependencies #-}
+-- {-# LANGUAGE AllowAmbiguousTypes #-}
+-- {-# LANGUAGE ScopedTypeVariables #-}
+-- {-# LANGUAGE MonoLocalBinds #-}
+-- {-# LANGUAGE UndecidableInstances #-}
+-- {-# LANGUAGE FlexibleInstances #-}
+-- {-# LANGUAGE RankNTypes #-}
+-- {-# LANGUAGE ExistentialQuantification #-}
+-- {-# LANGUAGE DeriveFunctor #-}
+-- {-# LANGUAGE StandaloneDeriving #-}
+-- {-# LANGUAGE FlexibleContexts #-}
+-- {-# LANGUAGE OverlappingInstances #-}
+
+module Abstract where
+
+-- import Data.Map
+-- import Data.Array (Array,Ix,accumArray)
+-- import Data.Array.IO
+-- import Data.IORef
+-- import Control.Monad (forM_)
+-- import Control.Monad.State.Lazy
+-- import Prelude hiding (lookup,map)
+
+
+import Expressions
+
+-- %%%
+-- %%% adding Let
+-- %%%
+--
+-- % first add it as a meta-operation on Expr v; then extend syntax to SExpr v
+--
+-- letExpr :: Expr v -> Expr (Maybe v) -> Expr v
+-- letExpr e1 e2 = eval env e2 where
+-- >
+--   env Nothing  = e1
+--   env (Just v) = Var v
+--
+-- % fuse let and eval: letEval env e1 e2 = eval env (letExpr e1 e2)
+--
+-- letEval :: Semiring d =(v -> d) -> Expr v -> Expr (Maybe v) -> d
+-- letEval env e1 e2 = eval gen e2 where
+-- >
+--   gen Nothing  = eval env e1
+--   gen (Just v) = env v
+--
+-- % extending the syntax of expressions with Let
+--
+-- data SExpr v
+--   =  SVar v
+--   |  SZero
+--   |  SOne
+--   |  SPlus  (SExpr v) (SExpr v)
+--   |  STimes (SExpr v) (SExpr v)
+--   |  SLet   (SExpr v) (SExpr (Maybe v))
+--   deriving Functor
+--
+-- % etc. (?)
+--
+-- seval :: Semiring d =(v -> d) -> SExpr v -> d
+-- seval gen (SVar v)         =  gen v
+-- seval gen SZero            =  zero
+-- seval gen SOne             =  one
+-- seval gen (SPlus   e1 e2)  =  seval gen e1  `plus`   seval gen e2
+-- seval gen (STimes  e1 e2)  =  seval gen e1  `times`  seval gen e2
+-- seval gen (SLet    e1 e2)  =  seval env e2 where
+-- >
+--   env Nothing  = seval gen e1
+--   env (Just v) = gen v
+--
+-- % now, this is as before
+--
+-- sabstractAD :: Dirac v d e =(v -> d) -> SExpr v -> CliffordWeil d e
+-- sabstractAD env exp = seval gen exp where gen v = CW (env v) (kronecker v)
+--
+-- % with extraction function
+--
+-- sabstractAD_extract :: Dirac v d e =(v -> d) -> SExpr v -> e
+-- sabstractAD_extract env exp = e where CW _ e = sabstractAD env exp
+--
+-- % so there is a calculation to do to show that this function indeed satisfies the
+-- % 'definitional' specialisations described in Section 7.3,
+-- % viz. for the Dense function space
+--
+-- %%% sabstractAD env (SLet exp1 exp2) v = CW d2 ((ey `times` e1) `plus` e2) where
+-- %%%   CW d1 e1 = sabstractAD env exp1 v
+-- %%%   diff     = sabstractAD gen exp2 where
+-- %%%     gen Nothing  = d1
+-- %%%     gen (Just v) = env v
+-- %%%   CW d2 ey = diff Nothing
+-- %%%   CW  _ e2 = diff (Just v)
+--
+-- % TODO: I think this holds, by unfolding the defn of sabstractAD,
+-- % plugging in the defn of gen, and unfolding kronecker on (Maybe v)
+-- % in the last two clauses
+--
+-- % or is there more to sharing than I realise?
+--
+-- %%%
+-- %%% frex generalisation of the above
+-- %%%
+--
+-- % generalisation: the free extension of a semiring
+--
+-- data GExpr d v
+--   =  GHom d
+--   |  GVar v
+--   |  GPlus   (GExpr d v) (GExpr d v)
+--   |  GTimes  (GExpr d v) (GExpr d v)
+--
+-- % why can't I write   deriving instance (Functor (GExpr d)) here?
+--
+-- % with smart constructors
+-- % cf. dyn/sta binding-time distinction in Yallop, von Glehn and Kammar (2017)
+--
+-- gZero :: Semiring d =GExpr d v
+-- gZero = GHom zero
+--
+-- gOne  :: Semiring d =GExpr d v
+-- gOne  = GHom one
+--
+-- gPlus :: Semiring d =GExpr d v -> GExpr d v -> GExpr d v
+-- >
+-- gPlus (GHom d) (GHom d') = GHom (d `plus` d')
+-- gPlus     e        e'    = GPlus e e'
+--
+-- gTimes :: Semiring d =GExpr d v -> GExpr d v -> GExpr d v
+-- >
+-- gTimes (GHom d) (GHom d') = GHom (d `times` d')
+-- gTimes     e        e'    = GTimes e e'
+--
+-- % and hence
+--
+-- %if False
+--
+-- instance Semiring d =Functor (GExpr d) where
+-- >
+--   fmap h (GHom d)      = GHom d
+--   fmap h (GVar v)      = GVar $ h v
+--   fmap h (GPlus  e e') = gPlus  (fmap h e) (fmap h e')
+--   fmap h (GTimes e e') = gTimes (fmap h e) (fmap h e')
+--
+-- %endif
+--
+-- instance Semiring d =Semiring (GExpr d v) where
+--   zero   = gZero
+--   one    = gOne
+--   plus   = gPlus
+--   times  = gTimes
+--
+-- instance Semiring d =Semigroup (GExpr d v) where
+-- >
+--   (<>) = gPlus
+--
+-- instance Semiring d =Monoid (GExpr d v) where
+-- >
+--   mempty = gZero
+--
+-- instance Semiring d =SModule d (GExpr d v) where
+-- >
+--   d `sact` e = gTimes (GHom d) e
+--
+-- % and finally
+--
+-- instance Semiring d =SAlgebra d (GExpr d v) where
+-- >
+--   shom = GHom
+--
+-- % GExpr d v is the free d-algebra extension of d:
+-- % given a d-algebra structure one, and a map from v to e,
+-- % (and hence a distinguished semiring homomorphism from d to e)
+-- % initiality/freeness is witnessed by a (unique) map from GExpr d v to e
+--
+-- geval :: SAlgebra d e =(v -> e) -> GExpr d v -> e
+-- geval gen (GHom d)         =  shom d
+-- geval gen (GVar x)         =  gen x
+-- geval gen (GPlus   e1 e2)  =  geval gen e1  `plus`   geval gen e2
+-- geval gen (GTimes  e1 e2)  =  geval gen e1  `times`  geval gen e2
+--
+-- %if False
+--
+-- data GEXPR d v = GEXPR (forall e. SAlgebra d e =(v -> e) -> e)
+--
+-- gexpr_to_GEXPR :: Semiring d =GExpr d v -> GEXPR d v
+-- gexpr_to_GEXPR e = GEXPR (\ g -> geval g e)
+--
+-- gexpr_to_GExpr :: Semiring d =GEXPR d v -> GExpr d v
+-- gexpr_to_GExpr (GEXPR e) = e GVar
+--
+-- %endif
+--
+-- %%% to be continued ...
