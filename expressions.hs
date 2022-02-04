@@ -38,6 +38,7 @@ instance Ix X where
 rangeX :: (X,X)
 rangeX = (X,X)
 
+-- x * (x + 1)
 example1 :: Expr X
 example1 = Times (Var X) (Plus (Var X) One)
 
@@ -46,10 +47,12 @@ example1 = Times (Var X) (Plus (Var X) One)
 data XX = X1 | X2
    deriving (Show, Eq, Ord)
 
+-- x * y + x + 1
 example2 :: Expr XX
 example2 = Plus (Plus (Times (Var X1) (Var X2)) (Var X1)) One
 
 -- example 3
 
+-- x * (x + 1) * (x + x)
 example3 :: Expr X
 example3 = Times (Var X) (Times (Plus (Var X) One) (Plus (Var X) (Var X)))
