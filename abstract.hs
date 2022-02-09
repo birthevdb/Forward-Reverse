@@ -122,9 +122,6 @@ instance SModule d e => SAlgebra d (CliffordWeil d e) where
 
 class SModule d e => Kronecker v d e where
   delta      :: v -> e
-  delta v    = sdelta v (one :: d)
-  sdelta     :: v -> d -> e
-  sdelta v d = d `sact` (delta v)
 
 -----------------
 -- Abstract AD --

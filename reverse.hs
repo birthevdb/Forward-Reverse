@@ -3,6 +3,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE OverlappingInstances #-}
 
 module Reverse where
 
@@ -41,8 +42,15 @@ instance Monoid e => Monoid (Hom  d e) where
 instance SModule d e => SModule d (Hom d e) where
   d' `sact` (Hom f) = Hom (\d -> f (d' `times` d))
 
+-- generic instance
+
 instance Kronecker v d e => Kronecker v d (Hom d e) where
-  delta = Hom . sdelta
+  delta v = Hom (\d -> d `sact` delta v)
+
+-- optimized instance
+
+instance (Ord v, Semiring d) => Kronecker v d (Hom d (SparseSA v d)) where
+  delta v = Hom (\d -> Sparse (singleton v (SA d)))
 
 -- reverse mode AD
 
@@ -53,7 +61,6 @@ reverseAD = abstractD
 
 reverseAD_extract :: (Ord v, Semiring d) => (v -> d) -> Expr v -> Map v d
 reverseAD_extract gen = sparseSA . absHom . eCW . reverseAD gen
--- TODO
 
 -- example
 
@@ -83,8 +90,10 @@ instance Monoid (Endo e) where
 instance SModule d e => SModule d (Endo e) where
   d `sact` E f = E (\e -> f (d `sact` e))
 
-instance Kronecker v d e => Kronecker v d (Endo e) where
-  sdelta d v = E (\e -> e <> (sdelta d v))
+-- optimized version
+
+instance (Ord v, Semiring d) => Kronecker v d (Hom d (Endo (Sparse v (SemiringAsSAlgebra d)))) where
+  delta v = Hom (\d -> E (\e -> Sparse (insertWith plus v (SA d) (sparse e))))
 
 reverseAD_Endo :: (Ord v, Semiring d) =>
   (v -> d) -> Expr v -> CliffordWeil d (Hom d (Endo (SparseSA v d)))
@@ -127,7 +136,10 @@ instance (SAlgebra d e, MReadArray arr v e m) => SModule d (SM d m) where
   d `sact` com = SM $ do sm com; arr <- ask; b <- getBounds arr ; forM_ (range b) (modifyArrayAt (d `sact`))
 
 instance (SAlgebra d e, MReadArray arr v e m) => Kronecker v d (SM d m) where
-  sdelta v d = SM $ modifyArrayAt (`mappend` shom d) v
+  delta v = SM $ modifyArrayAt (`mappend` one) v
+
+instance (SAlgebra d e, MReadArray arr v e m) => Kronecker v d (Hom d (SM d m)) where
+  delta v = Hom (\d -> SM $ modifyArrayAt (`mappend` (shom d)) v)
 
 -- reverseAD
 

@@ -1,27 +1,4 @@
--- {-# LANGUAGE MultiParamTypeClasses #-}
--- {-# LANGUAGE FunctionalDependencies #-}
--- {-# LANGUAGE AllowAmbiguousTypes #-}
--- {-# LANGUAGE ScopedTypeVariables #-}
--- {-# LANGUAGE MonoLocalBinds #-}
--- {-# LANGUAGE UndecidableInstances #-}
--- {-# LANGUAGE FlexibleInstances #-}
--- {-# LANGUAGE RankNTypes #-}
--- {-# LANGUAGE ExistentialQuantification #-}
--- {-# LANGUAGE DeriveFunctor #-}
--- {-# LANGUAGE StandaloneDeriving #-}
--- {-# LANGUAGE FlexibleContexts #-}
--- {-# LANGUAGE OverlappingInstances #-}
--- {-# LANGUAGE TypeSynonymInstances #-}
-
 module Symbolic where
-
--- import Data.Map
--- import Data.Array (Array,Ix,accumArray)
--- import Data.Array.IO
--- import Data.IORef
--- import Control.Monad (forM_)
--- import Control.Monad.State.Lazy
--- import Prelude hiding (lookup,map)
 
 
 import Expressions
