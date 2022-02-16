@@ -14,7 +14,7 @@ import Reverse
 
 type AbstractExpr1 = forall d. Semiring d => d -> d
 
-abstractD1 :: SAlgebra d e => AbstractExpr1 -> d -> CliffordWeil d e
+abstractD1 :: Algebra d e => AbstractExpr1 -> d -> CliffordWeil d e
 abstractD1 f d = f (CW d one)
 
 -- x * (x + 1)

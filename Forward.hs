@@ -19,7 +19,7 @@ import Abstract
 -- Classical forward-mode AD --
 -------------------------------
 
-type ClassicalDual d = CliffordWeil d (SemiringAsSAlgebra d)
+type ClassicalDual d = CliffordWeil d (SemiringAsAlgebra d)
 
 fstD :: Semiring d => ClassicalDual d -> d
 fstD = dCW
@@ -45,15 +45,15 @@ type Dense v e = v -> e
 
 -- instances
 
-instance SModule d e => SModule d (Dense v e) where
+instance Module d e => Module d (Dense v e) where
   d `sact` (f) = h where h v = d `sact` (f v)
 
-instance (Eq v, SAlgebra d e) => Kronecker v d (Dense v e) where
+instance (Eq v, Algebra d e) => Kronecker v d (Dense v e) where
   delta v = \ w -> if v == w then one else zero
 
 -- forward AD
 
-abstractforwardAD :: (Eq v, Semiring d) => (v -> d) -> Expr v -> CliffordWeil d (Dense v (SemiringAsSAlgebra d))
+abstractforwardAD :: (Eq v, Semiring d) => (v -> d) -> Expr v -> CliffordWeil d (Dense v (SemiringAsAlgebra d))
 abstractforwardAD = abstractD
 -- abstractforwardAD gen e = sa . (abstractD_extract gen e)
 
@@ -88,7 +88,7 @@ forwardGradient_extract gen = fmap dCW . eCW . forwardGradient gen
 
 -- optimized version
 
-type DenseSA v d = Dense v (SemiringAsSAlgebra d)
+type DenseSA v d = Dense v (SemiringAsAlgebra d)
 
 abstractSharedGradient :: (Eq v, Semiring d) => (v -> d) -> Expr v -> CliffordWeil d (DenseSA v d)
 abstractSharedGradient = abstractD
@@ -116,21 +116,21 @@ sparseToDense (Sparse m) = f where f v = findWithDefault (mempty :: e) v m
 
 -- instances
 
-instance (Ord v, SModule d e) => Semigroup (Sparse v e) where
+instance (Ord v, Module d e) => Semigroup (Sparse v e) where
   Sparse f <> Sparse g = Sparse (unionWith (<>) f g)
 
-instance (Ord v, SModule d e) => Monoid (Sparse v e) where
+instance (Ord v, Module d e) => Monoid (Sparse v e) where
   mempty = Sparse empty
 
-instance (Ord v, SModule d e) => SModule d (Sparse v e) where
+instance (Ord v, Module d e) => Module d (Sparse v e) where
   d `sact` (Sparse m) = Sparse $ map (d `sact`) m
 
-instance (Ord v, SAlgebra d e) => Kronecker v d (Sparse v e) where
+instance (Ord v, Algebra d e) => Kronecker v d (Sparse v e) where
   delta v = Sparse $ singleton v one
 
 -- this representation allows to write the following Sparse form of gradient computation
 
-type SparseSA v d = Sparse v (SemiringAsSAlgebra d)
+type SparseSA v d = Sparse v (SemiringAsAlgebra d)
 
 sparseSA :: SparseSA v d -> Map v d
 sparseSA = map sa . sparse

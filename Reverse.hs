@@ -25,10 +25,10 @@ import Forward
 
 newtype Hom d e = Hom { unHom :: d -> e }
 
-reprHom :: SModule d e => e -> Hom d e
+reprHom :: Module d e => e -> Hom d e
 reprHom e = Hom (\d -> d `sact` e)
 
-absHom :: SModule d e => Hom d e -> e
+absHom :: Module d e => Hom d e -> e
 absHom (Hom f) = f one
 
 -- instances
@@ -39,7 +39,7 @@ instance Semigroup e => Semigroup (Hom d e) where
 instance Monoid e => Monoid (Hom  d e) where
   mempty = Hom (\d -> mempty)
 
-instance SModule d e => SModule d (Hom d e) where
+instance Module d e => Module d (Hom d e) where
   d' `sact` (Hom f) = Hom (\d -> f (d' `times` d))
 
 -- generic instance
@@ -87,12 +87,12 @@ instance Semigroup (Endo e) where
 instance Monoid (Endo e) where
   mempty = E id
 
-instance SModule d e => SModule d (Endo e) where
+instance Module d e => Module d (Endo e) where
   d `sact` E f = E (\e -> f (d `sact` e))
 
 -- optimized version
 
-instance (Ord v, Semiring d) => Kronecker v d (Hom d (Endo (Sparse v (SemiringAsSAlgebra d)))) where
+instance (Ord v, Semiring d) => Kronecker v d (Hom d (Endo (Sparse v (SemiringAsAlgebra d)))) where
   delta v = Hom (\d -> E (\e -> Sparse (insertWith plus v (SA d) (sparse e))))
 
 reverseAD_Endo :: (Ord v, Semiring d) =>
@@ -132,30 +132,30 @@ modifyArrayAt f v = do arr <- ask; a <- readArray arr v ; writeArray arr v (f a)
 
 -- instances
 
-instance (SAlgebra d e, MReadArray arr v e m) => SModule d (SM d m) where
+instance (Algebra d e, MReadArray arr v e m) => Module d (SM d m) where
   d `sact` com = SM $ do sm com; arr <- ask; b <- getBounds arr ; forM_ (range b) (modifyArrayAt (d `sact`))
 
-instance (SAlgebra d e, MReadArray arr v e m) => Kronecker v d (SM d m) where
+instance (Algebra d e, MReadArray arr v e m) => Kronecker v d (SM d m) where
   delta v = SM $ modifyArrayAt (`mappend` one) v
 
-instance (SAlgebra d e, MReadArray arr v e m) => Kronecker v d (Hom d (SM d m)) where
+instance (Algebra d e, MReadArray arr v e m) => Kronecker v d (Hom d (SM d m)) where
   delta v = Hom (\d -> SM $ modifyArrayAt (`mappend` (shom d)) v)
 
 -- reverseAD
 
-reverseAD_array :: (SAlgebra d e, MReadArray arr v e m)
+reverseAD_array :: (Algebra d e, MReadArray arr v e m)
                 => (v -> d) -> Expr v -> CliffordWeil d (Hom d (SM d m))
 reverseAD_array = abstractD
 
 -- with extraction functions
 
-reverseAD_array_extract  :: (SAlgebra d e, MReadArray arr v e m) => (v -> d) -> Expr v -> SM d m
+reverseAD_array_extract  :: (Algebra d e, MReadArray arr v e m) => (v -> d) -> Expr v -> SM d m
 reverseAD_array_extract gen = absHom . eCW . reverseAD_array gen
 
 -- for IO
 
 reverseAD_CY_IO_extract :: forall v d. (Ix v, Semiring d) => (v -> d) -> Expr v -> (v,v) -> IO (Map v d)
-reverseAD_CY_IO_extract gen e rng = do (arr :: IOArray v (SemiringAsSAlgebra d)) <- newArray rng zero
+reverseAD_CY_IO_extract gen e rng = do (arr :: IOArray v (SemiringAsAlgebra d)) <- newArray rng zero
                                        runReaderT (sm $ reverseAD_array_extract gen e) arr
                                        m <- getAssocs arr
                                        return $ map sa $ fromAscList m

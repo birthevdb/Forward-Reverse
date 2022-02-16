@@ -28,7 +28,7 @@ instance Semiring d => Semigroup (Stream d) where
 instance Semiring d => Monoid (Stream d) where
   mempty = zero :< mempty
 
-instance Semiring d => SModule d (Stream d) where
+instance Semiring d => Module d (Stream d) where
   d' `sact` (d :< ds) = (d' `times` d) :< (d' `sact` ds)
 
 -- alternative account of Stream d differential structure
@@ -44,7 +44,7 @@ instance (Semiring d) => Semiring (Stream d) where
     where CW z zs = CW x xs `times` CW y ys
 
 
-instance Semiring d => SAlgebra d (Stream d) where
+instance Semiring d => Algebra d (Stream d) where
   shom d = d :< zero
 
 forwardAll :: (Eq v, Semiring d) => (v -> d) -> Expr v -> v -> Stream d

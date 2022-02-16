@@ -8,7 +8,7 @@ import Abstract
 -- Symbolic differentiation --
 ------------------------------
 
-type ClassicalDual d = CliffordWeil d (SemiringAsSAlgebra d)
+type ClassicalDual d = CliffordWeil d (SemiringAsAlgebra d)
 
 fstD :: Semiring d => ClassicalDual d -> d
 fstD = dCW

@@ -48,9 +48,9 @@ eval gen (Times  e1 e2) = eval gen e1 `times` eval gen e2
 -- d-modules --
 ---------------
 
--- if SModule d e, then we say that e is a d-module
+-- if Module d e, then we say that e is a d-module
 
-class (Semiring d, Monoid e) => SModule d e | e -> d where
+class (Semiring d, Monoid e) => Module d e | e -> d where
  sact :: d -> e -> e
 
 ----------------
@@ -61,30 +61,30 @@ class (Semiring d, Monoid e) => SModule d e | e -> d where
 -- then we speak of having a semiring algebra structure on e,
 -- by analogy with rings/fields, and say that 'e is a d-algebra'
 
-class (SModule d e, Semiring e) => SAlgebra d e where
+class (Module d e, Semiring e) => Algebra d e where
   shom :: d -> e
   shom = (`sact` one)
 
 -- an important special case: a semiring d is always a d-algebra
 
-newtype SemiringAsSAlgebra d = SA { sa :: d } deriving (Functor, Show)
+newtype SemiringAsAlgebra d = SA { sa :: d } deriving (Functor, Show)
 
-instance Semiring d => Semigroup (SemiringAsSAlgebra d) where
+instance Semiring d => Semigroup (SemiringAsAlgebra d) where
   (SA d) <> (SA d') = SA (d `plus` d')
 
-instance Semiring d => Monoid (SemiringAsSAlgebra d) where
+instance Semiring d => Monoid (SemiringAsAlgebra d) where
   mempty = SA zero
 
-instance Semiring d => SModule d (SemiringAsSAlgebra d) where
+instance Semiring d => Module d (SemiringAsAlgebra d) where
   d `sact` (SA d') = SA (d `times` d')
 
-instance Semiring d => Semiring (SemiringAsSAlgebra d) where
+instance Semiring d => Semiring (SemiringAsAlgebra d) where
   zero = SA zero
   one  = SA one
   (SA d) `plus`  (SA d') = SA (d `plus`  d')
   (SA d) `times` (SA d') = SA (d `times` d')
 
-instance {-# OVERLAPPABLE #-} Semiring d => SAlgebra d (SemiringAsSAlgebra d) where
+instance {-# OVERLAPPABLE #-} Semiring d => Algebra d (SemiringAsAlgebra d) where
   shom = SA
 
 -------------------
@@ -98,29 +98,29 @@ instance Functor (CliffordWeil d) where
 
 -- the fundamental theorem: if e is a d-module, then CW d e is a semiring
 
-instance SModule d e => Semiring (CliffordWeil d e) where
+instance Module d e => Semiring (CliffordWeil d e) where
   zero                        = CW zero mempty
   one                         = CW one  mempty
   (CW f df) `plus`  (CW g dg) = CW (f `plus`  g) (df `mappend` dg)
   (CW f df) `times` (CW g dg) = CW (f `times` g) ((f `sact` dg) `mappend` (g `sact` df))
 
-instance SModule d e => Semigroup (CliffordWeil d e) where
+instance Module d e => Semigroup (CliffordWeil d e) where
   (<>) = plus
 
-instance SModule d e => Monoid (CliffordWeil d e) where
+instance Module d e => Monoid (CliffordWeil d e) where
   mempty = zero
 
-instance SModule d e => SModule d (CliffordWeil d e) where
+instance Module d e => Module d (CliffordWeil d e) where
   d' `sact` (CW d e) = CW (d' `times` d) (d' `sact` e)
 
-instance SModule d e => SAlgebra d (CliffordWeil d e) where
+instance Module d e => Algebra d (CliffordWeil d e) where
   shom d = CW d mempty
 
 ---------------
 -- Kronecker --
 ---------------
 
-class SModule d e => Kronecker v d e where
+class Module d e => Kronecker v d e where
   delta      :: v -> e
 
 -----------------
